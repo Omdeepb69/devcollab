@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DevCollab{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">DevCollab Dashboard</h1>
+        <p class="lead">
+            Welcome to DevCollab - Your integrated platform for developer collaboration,
+            automation and team communication.
+        </p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Quick Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('messaging') }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1"><i class="fas fa-comment-dots me-2"></i>Send Message</h5>
+                            <small><i class="fas fa-chevron-right"></i></small>
+                        </div>
+                        <p class="mb-1">Send WhatsApp messages to team members</p>
+                    </a>
+                    <a href="{{ url_for('github') }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1"><i class="fab fa-github me-2"></i>GitHub Repositories</h5>
+                            <small><i class="fas fa-chevron-right"></i></small>
+                        </div>
+                        <p class="mb-1">View and manage your GitHub repositories</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span><i class="fas fa-check-circle text-success me-2"></i>Messaging Service</span>
+                    <span class="badge bg-success">Online</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span><i class="fas fa-check-circle text-success me-2"></i>Task Scheduler</span>
+                    <span class="badge bg-success">Running</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="{% if github_integration %}fas fa-check-circle text-success{% else %}fas fa-exclamation-circle text-warning{% endif %} me-2"></i>
+                        GitHub Integration
+                    </span>
+                    <span class="badge {% if github_integration %}bg-success{% else %}bg-warning{% endif %}">
+                        {% if github_integration %}Connected{% else %}Not Configured{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Pending Tasks -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Pending Tasks</h5>
+            </div>
+            <div class="card-body">
+                <div id="pending-tasks-loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading pending tasks...</p>
+                </div>
+                <div id="pending-tasks-container" class="d-none">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Description</th>
+                                <th>Scheduled Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-tasks-body">
+                            <!-- Tasks will be loaded here dynamically -->
+                        </tbody>
+                    </table>
+                    <div id="no-tasks-message" class="text-center d-none">
+                        <p>No pending tasks found.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load pending tasks on page load
+    $(document).ready(function() {
+        loadPendingTasks();
+    });
+
+    // Function to load pending tasks
+    function loadPendingTasks() {
+        $.ajax({
+            url: '{{ url_for("api_pending_tasks") }}',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('#pending-tasks-loading').addClass('d-none');
+                $('#pending-tasks-container').removeClass('d-none');
+                
+                if (data.status === 'success' && data.tasks && data.tasks.length > 0) {
+                    const tasksBody = $('#pending-tasks-body');
+                    tasksBody.empty();
+                    
+                    data.tasks.forEach(function(task) {
+                        const row = $('<tr>');
+                        
+                        // Format scheduled time
+                        const scheduledTime = task.next_run_time ? new Date(task.next_run_time).toLocaleString() : 'N/A';
+                        
+                        // Create task description
+                        let description = task.name || 'Unnamed task';
+                        if (task.func) {
+                            const funcName = task.func.split(' ')[1];
+                            description = funcName || description;
+                        }
+                        
+                        row.append($('<td>').text(task.id));
+                        row.append($('<td>').text(description));
+                        row.append($('<td>').text(scheduledTime));
+                        
+                        // Actions column with cancel button
+                        const actionsCell = $('<td>');
+                        const cancelBtn = $('<button>')
+                            .addClass('btn btn-sm btn-danger')
+                            .html('<i class="fas fa-times me-1"></i>Cancel')
+                            .click(function() {
+                                cancelTask(task.id);
+                            });
+                        
+                        actionsCell.append(cancelBtn);
+                        row.append(actionsCell);
+                        
+                        tasksBody.append(row);
+                    });
+                } else {
+                    $('#no-tasks-message').removeClass('d-none');
+                }
+            },
+            error: function() {
+                $('#pending-tasks-loading').addClass('d-none');
+                $('#pending-tasks-container').removeClass('d-none');
+                $('#no-tasks-message').removeClass('d-none').html('<p class="text-danger">Error loading tasks. Please try again later.</p>');
+            }
+        });
+    }
+
+    // Function to cancel a task
+    function cancelTask(jobId) {
+        if (confirm('Are you sure you want to cancel this task?')) {
+            $.ajax({
+                url: '{{ url_for("api_cancel_task", job_id="") }}' + jobId,
+                type: 'POST',
+                dataType: 'json',
+                success: function(data) {
+                    if (data.status === 'success') {
+                        // Show success message
+                        const alertHtml = `
+                            <div class="alert alert-success alert-dismissible fade show">
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        `;
+                        $('.container').prepend(alertHtml);
+                        
+                        // Reload tasks
+                        loadPendingTasks();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                },
+                error: function() {
+                    alert('Error cancelling task. Please try again.');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

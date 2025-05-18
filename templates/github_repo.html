@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Repositories - DevCollab{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fab fa-github me-2"></i> GitHub Repositories
+        </h1>
+        <p class="lead">
+            Manage your GitHub repositories and collaborate with team members.
+        </p>
+    </div>
+</div>
+
+{% if not repositories %}
+    <div class="alert alert-warning">
+        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>GitHub Integration Not Available</h4>
+        <p>
+            GitHub integration is not available. Please check your configuration to ensure a valid GitHub token is provided.
+        </p>
+        <hr>
+        <p class="mb-0">
+            To configure GitHub integration, add your GitHub token to the <code>.env</code> file:
+            <pre>GITHUB_TOKEN=your_personal_access_token</pre>
+        </p>
+    </div>
+{% else %}
+    <div class="row">
+        <!-- Repository List -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-code-branch me-2"></i>Your Repositories</h5>
+                        <span class="badge bg-light text-dark">{{ repositories|length }} repos</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Repository</th>
+                                    <th>Description</th>
+                                    <th>Language</th>
+                                    <th>Stars</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for repo in repositories %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('github_repo', repo_name=repo.name) }}" class="fw-bold text-decoration-none">
+                                            {{ repo.name }}
+                                        </a>
+                                        {% if repo.private %}
+                                            <span class="badge bg-secondary ms-1">Private</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if repo.description %}
+                                            {{ repo.description }}
+                                        {% else %}
+                                            <span class="text-muted">No description</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if repo.language %}
+                                            <span class="badge bg-info text-dark">{{ repo.language }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-star text-warning me-1"></i> {{ repo.stars }}
+                                    </td>
+                                    <td>
+                                        {% if repo.updated_at %}
+                                            {{ repo.updated_at.split('T')[0] }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('github_repo', repo_name=repo.name) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-info-circle me-1"></i>Details
+                                            </a>
+                                            <a href="{{ repo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-external-link-alt me-1"></i>Open
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

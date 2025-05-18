@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Messaging - DevCollab{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-comment-dots me-2"></i> Team Messaging
+        </h1>
+        <p class="lead">
+            Send WhatsApp messages to team members and collaborators.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Single Message Form -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Send Single Message</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('messaging') }}">
+                    {{ form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.recipient.id }}" class="form-label">Recipient Phone Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            {{ form.recipient(class="form-control", placeholder="+1234567890") }}
+                        </div>
+                        <div class="form-text">Include country code (e.g., +1 for US)</div>
+                        {% if form.recipient.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.recipient.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.message.id }}" class="form-label">Message</label>
+                        {{ form.message(class="form-control", rows=5) }}
+                        {% if form.message.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.message.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.delay.id }}" class="form-label">Delay (minutes)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                            {{ form.delay(class="form-control", min=1, max=60) }}
+                        </div>
+                        <div class="form-text">Time before the message is sent</div>
+                        {% if form.delay.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.delay.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bulk Message Form -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Send Bulk Messages</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('messaging') }}">
+                    {{ bulk_form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        <label for="{{ bulk_form.recipients.id }}" class="form-label">Recipients (one per line)</label>
+                        {{ bulk_form.recipients(class="form-control", rows=5, placeholder="+1234567890\n+0987654321") }}
+                        <div class="form-text">Include country code for each number</div>
+                        {% if bulk_form.recipients.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in bulk_form.recipients.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ bulk_form.message.id }}" class="form-label">Message</label>
+                        {{ bulk_form.message(class="form-control", rows=5) }}
+                        <div class="form-text">
+                            You can use template variables like {name}, {project}, etc.
+                        </div>
+                        {% if bulk_form.message.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in bulk_form.message.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ bulk_form.interval.id }}" class="form-label">Interval between messages (minutes)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                            {{ bulk_form.interval(class="form-control", min=1, max=60) }}
+                        </div>
+                        <div class="form-text">Time between each message</div>
+                        {% if bulk_form.interval.errors %}
+                            <div class="alert alert-danger">
+                                {% for error in bulk_form.interval.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ bulk_form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Message Templates -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Message Templates</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Stand-up Meeting Template -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">Stand-up Meeting</div>
+                            <div class="card-body">
+                                <p class="card-text">Hi team, reminder for our daily stand-up today at 10:00 AM. Please prepare your updates. {project_name} {meeting_link}</p>
+                                <button class="btn btn-sm btn-outline-primary copy-template" 
+                                        data-template="Hi team, reminder for our daily stand-up today at 10:00 AM. Please prepare your updates. {project_name} {meeting_link}">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Review Template -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">Code Review Request</div>
+                            <div class="card-body">
+                                <p class="card-text">Hi {name}, could you please review my PR? Repository: {repo_name}, PR number: {pr_number}. Thanks!</p>
+                                <button class="btn btn-sm btn-outline-primary copy-template" 
+                                        data-template="Hi {name}, could you please review my PR? Repository: {repo_name}, PR number: {pr_number}. Thanks!">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Deployment Notice Template -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">Deployment Notice</div>
+                            <div class="card-body">
+                                <p class="card-text">Important: We'll be deploying {project_name} to production today at {time}. Expected downtime: {downtime_minutes} minutes.</p>
+                                <button class="btn btn-sm btn-outline-primary copy-template" 
+                                        data-template="Important: We'll be deploying {project_name} to production today at {time}. Expected downtime: {downtime_minutes} minutes.">
+                                    <i class="fas fa-copy me-1"></i>Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Copy template to clipboard and to active message textarea
+        $('.copy-template').click(function() {
+            const template = $(this).data('template');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(template).then(function() {
+                // Show success message
+                const button = $(this);
+                const originalHtml = button.html();
+                
+                button.html('<i class="fas fa-check me-1"></i>Copied!');
+                setTimeout(function() {
+                    button.html(originalHtml);
+                }, 2000);
+                
+                // Copy to active message textarea or bulk message textarea if it's in focus
+                const activeTextarea = $('textarea:focus');
+                if (activeTextarea.length) {
+                    activeTextarea.val(template);
+                } else {
+                    // Default to single message textarea
+                    $('#{{ form.message.id }}').val(template);
+                }
+            }.bind(this));
+        });
+    });
+</script>
+{% endblock %}
